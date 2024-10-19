@@ -1,0 +1,110 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long Polling Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+        }
+
+        #messageInput {
+            width: 80%;
+            padding: 10px;
+        }
+
+        #sendBtn {
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Long Polling Chat</h1>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type your message here..." />
+    <button id="sendBtn">Send</button>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Function to append messages to the messages div
+        function appendMessages(messages) {
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = msg;
+                messagesDiv.appendChild(msgDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+        }
+
+        // Function to start long polling
+        function startLongPolling() {
+            fetch('http://localhost:3000/poll')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.messages && data.messages.length > 0) {
+                        appendMessages(data.messages);
+                    }
+                    // Restart the long polling after receiving a response
+                    startLongPolling();
+                })
+                .catch(err => {
+                    console.error('Long polling error:', err);
+                    // Retry after a delay in case of error
+                    setTimeout(startLongPolling, 5000);
+                });
+        }
+
+        // Start long polling when the page loads
+        window.onload = startLongPolling;
+
+        // Handle sending messages
+        sendBtn.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+
+            fetch('http://localhost:3000/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        messageInput.value = '';
+                    } else {
+                        alert('Failed to send message');
+                    }
+                })
+                .catch(err => {
+                    console.error('Send message error:', err);
+                });
+        });
+
+        // Optional: Allow sending message with Enter key
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>
