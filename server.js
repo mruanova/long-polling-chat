@@ -58,3 +58,14 @@ app.post('/send', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+// static content 
+var path = require("path");
+app.use(express.static(path.join(__dirname, "./static")));
+// setting up ejs and our views folder
+app.set('views', path.join(__dirname, './views'));
+app.set('view engine', 'ejs');
+// root route to render the index.ejs view
+app.get('/', function(req, res) {
+ res.render("index");
+});
